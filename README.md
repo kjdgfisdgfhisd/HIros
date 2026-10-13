@@ -7,7 +7,7 @@
 ## Установка
 
 ```lua
-local HIros = loadstring(game:HttpGet("https://ВАША_ССЫЛКА/HIros_library.lua"))()
+local HIros = loadstring(game:HttpGet("https://raw.githubusercontent.com/kjdgfisdgfhisd/HIros/refs/heads/main/HIros%206.3.lua"))()
 ```
 
 ## Минимальный пример
