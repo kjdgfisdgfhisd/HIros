@@ -12,7 +12,6 @@ local PlayerGui   = LocalPlayer:WaitForChild("PlayerGui")
 
 local BRAND = "HIros"
 
-
 local DEFAULT_SOUNDS = {
     Hover     = { Id = "rbxassetid://119354387183704", Volume = 0.25 },
     Click     = { Id = "rbxassetid://6042053626",      Volume = 0.5 },
@@ -29,6 +28,9 @@ local VERSION = "6.3"
 local Library = {}
 Library.__index = Library
 
+-- ============================================================
+-- THEMES
+-- ============================================================
 local THEMES = {
     Blue   = { Name = "Синяя",   Accent = Color3.fromRGB(88, 101, 242), AccentLight = Color3.fromRGB(160, 170, 255) },
     Red    = { Name = "Красная", Accent = Color3.fromRGB(235, 70, 85),  AccentLight = Color3.fromRGB(255, 150, 160) },
@@ -64,7 +66,8 @@ local THEME_ORDER = {
     "Sunset", "Ocean", "Aurora", "Neon", "Sakura", "Gold", "Ice", "Lava", "Midnight",
 }
 
-
+-- Палитры интерфейса: тёмная (по умолчанию) и светлая. Значения — "живые" переменные:
+-- при смене палитры все твины и новые элементы сразу берут новые цвета.
 local PALETTES = {
     dark = {
         BG_DARK = Color3.fromRGB(18, 18, 22),       BG_PANEL = Color3.fromRGB(26, 26, 31),
@@ -179,7 +182,20 @@ local STRINGS = {
         set_lang = "Язык интерфейса", set_lang_note = "Язык меню полностью применится после перезапуска скрипта.",
         set_overlay = "Оверлеи и телефон", set_quick = "Кнопки быстрого доступа",
         set_wm = "Водяной знак (FPS / пинг)", set_kb = "Список клавиш на экране",
-        set_handle = "Полоска-ручка под окном", set_reset_pos = "Сбросить позицию окна", set_reset_size = "Сбросить размер окна",
+        set_handle = "Полоска-ручка под окном", set_follow = "Скорость следования окна", set_reset_pos = "Сбросить позицию окна", set_reset_size = "Сбросить размер окна",
+        ctx_reset = "↺ Сбросить по умолчанию", ctx_fav = "☆ В избранное", ctx_unfav = "★ Убрать из избранного",
+        ctx_quick = "⚡ Быстрая кнопка", ctx_copy = "📋 Копировать значение", copied = "Скопировано",
+        fav_title = "Избранное", fav_empty = "Пока пусто. ПКМ или долгое нажатие на элемент → «В избранное».",
+        pal_ph = "Найти функцию или вкладку...", pal_none = "Ничего не найдено", pal_tab = "Вкладка",
+        set_compact = "Компактная панель вкладок", set_lowpower = "Режим слабого устройства",
+        set_transp = "Прозрачность окна", set_blur = "Размытие фона", set_openstyle = "Анимация открытия",
+        set_palette = "Палитра команд (Ctrl+K)", set_debug = "Скопировать отладочную информацию",
+        debug_done = "Отладочная информация скопирована", debug_console = "Буфер обмена недоступен — информация в консоли (F9)",
+        set_resetall = "Сбросить все значения", resetall_title = "Сбросить всё?",
+        resetall_body = "Все элементы вернутся к значениям по умолчанию.",
+        set_te = "Редактор темы", set_te_a = "Цвет 1 (основной)", set_te_b = "Цвет 2 (градиент)",
+        set_te_name = "Название темы", set_te_ph = "например: Мой неон", set_te_save = "💾 Сохранить тему",
+        set_te_saved = "Тема «%s» сохранена", set_te_need = "Введи название темы",
     },
     en = {
         search = "🔍 Search...", search_list = "Search list...", no_results = "🔎 Nothing found",
@@ -203,7 +219,20 @@ local STRINGS = {
         set_lang = "Interface language", set_lang_note = "The menu language fully applies after the script is restarted.",
         set_overlay = "Overlays & mobile", set_quick = "Quick buttons",
         set_wm = "Watermark (FPS / ping)", set_kb = "On-screen keybind list",
-        set_handle = "Drag handle under the window", set_reset_pos = "Reset window position", set_reset_size = "Reset window size",
+        set_handle = "Drag handle under the window", set_follow = "Window follow speed", set_reset_pos = "Reset window position", set_reset_size = "Reset window size",
+        ctx_reset = "↺ Reset to default", ctx_fav = "☆ Add to favorites", ctx_unfav = "★ Remove from favorites",
+        ctx_quick = "⚡ Quick button", ctx_copy = "📋 Copy value", copied = "Copied",
+        fav_title = "Favorites", fav_empty = "Empty for now. Right-click or long-press an element → “Add to favorites”.",
+        pal_ph = "Find a feature or tab...", pal_none = "Nothing found", pal_tab = "Tab",
+        set_compact = "Compact tab bar", set_lowpower = "Low-end device mode",
+        set_transp = "Window transparency", set_blur = "Background blur", set_openstyle = "Open animation",
+        set_palette = "Command palette (Ctrl+K)", set_debug = "Copy debug info",
+        debug_done = "Debug info copied", debug_console = "Clipboard unavailable — info printed to the console (F9)",
+        set_resetall = "Reset all values", resetall_title = "Reset everything?",
+        resetall_body = "Every element goes back to its default value.",
+        set_te = "Theme editor", set_te_a = "Color 1 (main)", set_te_b = "Color 2 (gradient)",
+        set_te_name = "Theme name", set_te_ph = "e.g. My neon", set_te_save = "💾 Save theme",
+        set_te_saved = "Theme “%s” saved", set_te_need = "Enter a theme name",
     },
 }
 
@@ -491,6 +520,7 @@ local function addHover(row, win, silentClick)
     row.MouseEnter:Connect(function()
         if win then win:_play("Hover") end
         TweenService:Create(row, TweenInfo.new(0.12), { BackgroundColor3 = BG_HOVER }):Play()
+        if win and win._lowPower then return end
         -- блик: полупрозрачная диагональная полоса пробегает слева направо
         local sheen = Instance.new("Frame")
         sheen.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -527,6 +557,7 @@ local function addHover(row, win, silentClick)
     row.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1
             or input.UserInputType == Enum.UserInputType.Touch then
+            if win and win._lowPower then return end
             local pp = pointerPos(input)
             local relX = pp.X - row.AbsolutePosition.X
             local relY = pp.Y - row.AbsolutePosition.Y
@@ -623,6 +654,8 @@ function Library:CreateWindow(config)
     self._locked = {}   -- заблокированные элементы (SetLocked)
     self._bindInfo = {} -- для списка клавиш на экране
     self._quickButtons = {}
+    self._index = {}    -- реестр элементов (палитра команд, избранное, сброс)
+    self._favs = {}     -- избранные элементы
     self._fit = 1       -- автоподгонка под размер экрана
 
     -- Выбор самого игрока (из файла конфига) важнее настроек скрипта.
@@ -637,6 +670,16 @@ function Library:CreateWindow(config)
     end
     self._lang = STRINGS[lang] and lang or "ru"
 
+    -- свои темы игрока (редактор темы) и избранное
+    if type(F._custom_themes) == "table" then
+        for tname, c in pairs(F._custom_themes) do
+            if type(c) == "table" and typeof(c.a) == "Color3" then
+                Library:RegisterTheme(tname, { Name = tname, Accent = c.a, Accent2 = (typeof(c.b) == "Color3") and c.b or nil })
+            end
+        end
+    end
+    for _, k in ipairs(type(F._favs) == "table" and F._favs or {}) do self._favs[k] = true end
+
     if type(F._theme_key) == "string" and THEMES[F._theme_key] then self._themeKey = F._theme_key end
     if typeof(F._accent) == "Color3" then
         self._themeOverride = {
@@ -647,6 +690,10 @@ function Library:CreateWindow(config)
     local wantLight = F._light
     if wantLight == nil then wantLight = self.Config.Light end
     if wantLight ~= nil then switchPalette(wantLight and "light" or "dark") end
+
+    local fs = F._follow
+    if fs == nil then fs = self.Config.FollowSpeed end
+    self._followSpeed = math.clamp(tonumber(fs) or 5, 1, 20) -- как быстро окно следует за палкой
 
     local he = F._handle -- белая полоска-ручка под окном
     if he == nil then he = (self.Config.DragHandle ~= false) end
@@ -716,7 +763,7 @@ function Library:CreateWindow(config)
 
     task.spawn(function()
         while self.GlowHolder.Parent do
-            if self.Enabled then
+            if self.Enabled and not self._lowPower then
                 for _, l in ipairs(self.GlowLayers) do
                     TweenService:Create(l.instance, TweenInfo.new(1.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
                         BackgroundTransparency = math.clamp(l.config.transparency + 0.05, 0, 1),
@@ -724,7 +771,7 @@ function Library:CreateWindow(config)
                 end
             end
             task.wait(1.8)
-            if self.Enabled then
+            if self.Enabled and not self._lowPower then
                 for _, l in ipairs(self.GlowLayers) do
                     TweenService:Create(l.instance, TweenInfo.new(1.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
                         BackgroundTransparency = l.config.transparency,
@@ -740,7 +787,7 @@ function Library:CreateWindow(config)
     task.spawn(function()
         local hue = 0
         while self.GlowHolder.Parent do
-            if self._glowMode == "rainbow" and self.Enabled then
+            if self._glowMode == "rainbow" and self.Enabled and not self._lowPower then
                 hue = (hue + 0.0035) % 1
                 local col = Color3.fromHSV(hue, 0.85, 1)
                 for _, l in ipairs(self.GlowLayers) do
@@ -846,6 +893,7 @@ function Library:CreateWindow(config)
     titleBg.Size = UDim2.new(1, 0, 1, 0)
     titleBg.ZIndex = 2
     titleBg.Parent = self.TitleBar
+    self._titleBg = titleBg
 
     local titleRound = Instance.new("Frame")
     titleRound.BackgroundColor3 = BG_PANEL
@@ -1031,6 +1079,7 @@ function Library:CreateWindow(config)
     sideBg.Size = UDim2.new(1, 0, 1, 0)
     sideBg.ZIndex = 2
     sideBg.Parent = self.Sidebar
+    self._sideBg = sideBg
 
     local sideRound = Instance.new("Frame")
     sideRound.BackgroundColor3 = BG_PANEL
@@ -1086,6 +1135,7 @@ function Library:CreateWindow(config)
     nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
     nameLabel.ZIndex = 4
     nameLabel.Parent = profileBox
+    self._nameLabel = nameLabel
 
     local divider = Instance.new("Frame")
     divider.BackgroundColor3 = LINE
@@ -1124,6 +1174,7 @@ function Library:CreateWindow(config)
     watermark.TextSize = 10
     watermark.ZIndex = 3
     watermark.Parent = self.Sidebar
+    self._sideWatermark = watermark
 
     self.ContentArea = Instance.new("Frame")
     self.ContentArea.BackgroundTransparency = 1
@@ -1214,6 +1265,7 @@ function Library:CreateWindow(config)
     if kbl then self:CreateKeybindList(self._kbCfg) end
 
     -- Подгонка под экран (телефон) и слежение за изменением размера экрана
+    self:_setupExtras()
     WINDOWS[self] = true
     self:_updateFit()
     local cam = workspace.CurrentCamera
@@ -1384,17 +1436,15 @@ function Library:Toggle(enabled)
     self.Enabled = enabled
     self:_play(enabled and "Open" or "Close")
     self:_showHandle(enabled)
+    self:_updateBlur()
     if enabled then
         self.Main.Visible = true
-        self.GlowHolder.Visible = true
+        self.GlowHolder.Visible = not self._lowPower
         for _, l in ipairs(self.GlowLayers) do
             l.instance.BackgroundTransparency = l.config.transparency
         end
         self:_resetCollapse()
-        self.Main.Size = UDim2.new(0, self.WindowSize.X, 0, 0)
-        TweenService:Create(self.Main, TweenInfo.new(0.42, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, self.WindowSize.X, 0, self.WindowSize.Y),
-        }):Play()
+        self:_playOpen()
         for _, l in ipairs(self.GlowLayers) do
             TweenService:Create(l.instance, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                 BackgroundTransparency = l.config.transparency,
@@ -1430,6 +1480,7 @@ function Library:Destroy()
     if self._hotkeyConn then pcall(function() self._hotkeyConn:Disconnect() end); self._hotkeyConn = nil end
     if self._clickConn then pcall(function() self._clickConn:Disconnect() end); self._clickConn = nil end
     WINDOWS[self] = nil
+    if self._blur then self._blur:Destroy() end
     if self.ClickGui then self.ClickGui:Destroy() end
     if self.OverlayGui then self.OverlayGui:Destroy() end
     if self.ScreenGui then self.ScreenGui:Destroy() end
@@ -2100,13 +2151,14 @@ local CREATORS = {
     CreateSection = "_addSection", CreateKeybind = "_addKeybind", CreateParagraph = "_addParagraph",
     CreateProgressBar = "_addProgressBar", CreateStepper = "_addStepper", CreateRadioGroup = "_addRadioGroup",
     CreateLoader = "_addLoader", CreateAccordion = "_addAccordion", CreateChart = "_addChart",
+    CreateRangeSlider = "_addRangeSlider", CreateLog = "_addLog", CreatePlayerDropdown = "_addPlayerDropdown",
 }
 
 function Library:_attachCreators(tab)
     for method, adder in pairs(CREATORS) do
         tab[method] = function(_, cfg)
             local c = withOrder(tab, cfg)
-            return self:_decorate(tab, c, self[adder](self, tab, c))
+            return self:_decorate(tab, c, self[adder](self, tab, c), method)
         end
     end
     -- Row — просто контейнер для своих кнопок, возвращаем сам Frame
@@ -2118,7 +2170,7 @@ end
 --   obj.SetName("текст")                 obj.Destroy()
 -- и реестр Window.Options.<Flag> для элементов с Flag.
 -- Методы можно вызывать и через точку, и через двоеточие (obj.Set(1) / obj:Set(1)).
-function Library:_decorate(tab, cfg, res)
+function Library:_decorate(tab, cfg, res, method)
     if res == nil then return res end
     local obj
     if typeof(res) == "Instance" then
@@ -2223,6 +2275,9 @@ function Library:_decorate(tab, cfg, res)
             if self._flagElements[i].obj == obj then table.remove(self._flagElements, i) end
         end
         if cfg.Flag and self.Options[cfg.Flag] == obj then self.Options[cfg.Flag] = nil end
+        for i = #self._index, 1, -1 do
+            if self._index[i].inst == inst then table.remove(self._index, i) end
+        end
         self._locked[inst] = true -- горячие клавиши уничтоженного элемента больше не срабатывают
     end)
 
@@ -2236,6 +2291,8 @@ function Library:_decorate(tab, cfg, res)
         end
     end
 
+    local kind = method and (method:gsub("^Create", "")) or ""
+    self:_registerElement(tab, cfg, obj, inst, kind)
     if cfg.Flag then self.Options[cfg.Flag] = obj end
 
     -- Quick = true на тумблере: сразу делаем круглую кнопку быстрого доступа (удобно на телефоне)
@@ -2423,7 +2480,7 @@ function Library:_addAccordion(tab, config)
     header.MouseButton1Click:Connect(function() setOpen(not open) end)
 
     -- "вкладка-внутри-вкладки": все Create* кладут элементы в body
-    local sub = { Name = config.Name, Key = (tab.Key or tab.Name or "") .. "/" .. tostring(config.Name), Content = body, Parent = self, Instance = wrap }
+    local sub = { Name = config.Name, Key = (tab.Key or tab.Name or "") .. "/" .. tostring(config.Name), Content = body, Parent = self, Instance = wrap, RootKey = tab.RootKey }
     self:_attachCreators(sub)
     sub.Open = function() setOpen(true) end
     sub.Close = function() setOpen(false) end
@@ -2618,7 +2675,7 @@ function Library:CreateTab(nameOrConfig)
     local idx = 2
     while self.Tabs[key] do key = name .. "_" .. idx; idx = idx + 1 end
 
-    local tab = { Name = name, Key = key, Elements = {}, Parent = self }
+    local tab = { Name = name, Key = key, RootKey = key, Elements = {}, Parent = self }
     self.Tabs[key] = tab
 
     local btn = Instance.new("TextButton")
@@ -2691,6 +2748,20 @@ function Library:CreateTab(nameOrConfig)
     label.Parent = btn
     tab.Label = label
 
+    -- в компактной панели у вкладки без иконки показывается первая буква
+    local short = Instance.new("TextLabel")
+    short.BackgroundTransparency = 1
+    short.Size = UDim2.new(1, 0, 1, 0)
+    short.Font = Enum.Font.GothamBold
+    local okCh, firstCh = pcall(function() return utf8.char(utf8.codepoint(name, 1)) end)
+    short.Text = upperText(okCh and firstCh or name:sub(1, 1))
+    short.TextColor3 = SUBTEXT
+    short.TextSize = 15
+    short.Visible = false
+    short.ZIndex = 5
+    short.Parent = btn
+    tab.Short = short
+
     self.TabButtons[key] = btn
 
     -- CanvasGroup позволяет плавно скрывать/показывать всю страницу целиком
@@ -2731,6 +2802,7 @@ function Library:CreateTab(nameOrConfig)
     if not self.CurrentTab then self:SelectTab(key) end
 
     self:_attachCreators(tab)
+    self:_applyCompactToTab(tab)
 
     return tab
 end
@@ -2774,6 +2846,9 @@ function Library:SelectTab(key)
                     TextColor3 = active and Color3.fromRGB(255,255,255) or SUBTEXT,
                 }):Play()
             end
+            if tabData.Short then
+                tabData.Short.TextColor3 = active and Color3.fromRGB(255, 255, 255) or SUBTEXT
+            end
             if tabData.Icon then
                 if tabData.Icon:IsA("ImageLabel") then
                     tabData.Icon.ImageColor3 = active and Color3.fromRGB(255,255,255) or SUBTEXT
@@ -2812,43 +2887,67 @@ function Library:_attachTooltip(row, text)
     local tooltip
     local showToken = 0
 
-    row.MouseEnter:Connect(function()
-        showToken = showToken + 1
-        local token = showToken
-        task.delay(0.45, function()
-            if token ~= showToken or not row.Parent then return end
-            local mouse = UserInputService:GetMouseLocation()
-            tooltip = Instance.new("TextLabel")
-            tooltip.BackgroundColor3 = BG_PANEL
-            tooltip.BorderSizePixel = 0
-            tooltip.AutomaticSize = Enum.AutomaticSize.X
-            tooltip.Size = UDim2.new(0, 0, 0, 26)
-            tooltip.Position = UDim2.new(0, mouse.X + 16, 0, mouse.Y + 16)
-            tooltip.Font = Enum.Font.Gotham
-            tooltip.Text = "  " .. text .. "  "
-            tooltip.TextColor3 = TEXT_COLOR
-            tooltip.TextSize = 12
-            tooltip.BackgroundTransparency = 1
-            tooltip.TextTransparency = 1
-            tooltip.ZIndex = 6000
-            tooltip.Parent = self.ScreenGui
-            createCorner(tooltip, 6)
-            local stroke = Instance.new("UIStroke")
-            stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-            stroke.Color = self:_theme().Accent
-            stroke.Transparency = 0.3
-            stroke.Parent = tooltip
-
-            TweenService:Create(tooltip, TweenInfo.new(0.12), { BackgroundTransparency = 0, TextTransparency = 0 }):Play()
-        end)
-    end)
-
-    row.MouseLeave:Connect(function()
+    local function hide()
         showToken = showToken + 1
         if tooltip then
             tooltip:Destroy()
             tooltip = nil
         end
+    end
+
+    local function show(pos)
+        if tooltip or not row.Parent then return end
+        tooltip = Instance.new("TextLabel")
+        tooltip.BackgroundColor3 = BG_PANEL
+        tooltip.BorderSizePixel = 0
+        tooltip.AutomaticSize = Enum.AutomaticSize.X
+        tooltip.Size = UDim2.new(0, 0, 0, 26)
+        tooltip.Position = UDim2.new(0, pos.X + 16, 0, pos.Y + 16)
+        tooltip.Font = Enum.Font.Gotham
+        tooltip.Text = "  " .. text .. "  "
+        tooltip.TextColor3 = TEXT_COLOR
+        tooltip.TextSize = 12
+        tooltip.BackgroundTransparency = 1
+        tooltip.TextTransparency = 1
+        tooltip.ZIndex = 6000
+        tooltip.Parent = self.ScreenGui
+        createCorner(tooltip, 6)
+        local stroke = Instance.new("UIStroke")
+        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        stroke.Color = self:_theme().Accent
+        stroke.Transparency = 0.3
+        stroke.Parent = tooltip
+        TweenService:Create(tooltip, TweenInfo.new(0.12), { BackgroundTransparency = 0, TextTransparency = 0 }):Play()
+    end
+
+    row.MouseEnter:Connect(function()
+        showToken = showToken + 1
+        local token = showToken
+        task.delay(0.45, function()
+            if token ~= showToken then return end
+            show(UserInputService:GetMouseLocation())
+        end)
+    end)
+    row.MouseLeave:Connect(hide)
+
+    -- телефон: подсказка по долгому нажатию (держится пару секунд)
+    row.InputBegan:Connect(function(input)
+        if input.UserInputType ~= Enum.UserInputType.Touch then return end
+        showToken = showToken + 1
+        local token = showToken
+        task.delay(0.5, function()
+            if token ~= showToken then return end
+            local pp = pointerPos(input)
+            show(Vector2.new(pp.X, pp.Y - 48))
+            task.delay(2.2, function()
+                if token == showToken then hide() end
+            end)
+        end)
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End and tooltip == nil then
+                showToken = showToken + 1 -- отпустил раньше времени — подсказку не показываем
+            end
+        end)
     end)
 end
 
@@ -5090,6 +5189,7 @@ function Library:_spawnClickFX(pos)
     local fx = self._clickFx
     local gui = self.ClickGui
     if not gui then return end
+    if self._lowPower then return end
     if self._fxActive > 60 then return end -- защита от спама кликами
 
     local color = getFxColor(fx, self:_theme())
@@ -5341,6 +5441,9 @@ end
 
 -- Вызывается каждый кадр: все "живые" анимации окна в одном месте
 function Library:_animate(dt, t)
+    if dt > 0 then self._fps = (self._fps or 60) * 0.92 + (1 / dt) * 0.08 end
+    if self._handle and self._handle.target then self:_stepMagnet(dt) end
+    if self._lowPower then return end -- слабое устройство: без «живых» анимаций
     if self.StrokeGradient then
         self.StrokeGradient.Offset = Vector2.new((t * 0.18) % 1, 0)
     end
@@ -5360,7 +5463,6 @@ function Library:_animate(dt, t)
         local sz = 64 + pulse * 5
         self.ToggleGlow.Size = UDim2.new(0, sz, 0, sz)
     end
-    if self._handle and self._handle.target then self:_stepMagnet(dt) end
     local h = self._handle
     if h and h.holder.Visible then
         -- блик: только при наведении (и пока тянешь). Проходит слева направо, затем короткая пауза
@@ -5405,7 +5507,11 @@ end
 -- ============================================================
 -- NOTIFY
 -- ============================================================
+-- Notify({ Kind = "info|success|warning|error", Title, Content, Duration,
+--          Action = { Text = "Отменить", Callback = fn } })
+-- Клик по уведомлению закрывает его; одновременно показывается не больше 5; история: Window:GetNotifyHistory().
 function Library:Notify(config)
+    config = config or {}
     local kind = config.Kind or "info"
     local accent = self:_theme().Accent
     local symbol = "💬"
@@ -5413,8 +5519,17 @@ function Library:Notify(config)
     elseif kind == "error" then accent = Color3.fromRGB(235, 80, 90); symbol = "❌"
     elseif kind == "warning" then accent = Color3.fromRGB(255, 180, 60); symbol = "⚠️" end
 
+    self._notifyHistory = self._notifyHistory or {}
+    table.insert(self._notifyHistory, {
+        Kind = kind, Title = config.Title, Content = config.Content, Time = os.time(),
+    })
+    if #self._notifyHistory > 50 then table.remove(self._notifyHistory, 1) end
+
+    local action = type(config.Action) == "table" and config.Action or nil
+    local height = action and 98 or 70
+
     local notify = Instance.new("Frame")
-    notify.Size = UDim2.new(0, 280, 0, 70)
+    notify.Size = UDim2.new(0, 280, 0, height)
     notify.Position = UDim2.new(1, 300, 0, 20)
     notify.BackgroundColor3 = BG_PANEL
     notify.BorderSizePixel = 0
@@ -5468,6 +5583,7 @@ function Library:Notify(config)
     content.TextColor3 = SUBTEXT
     content.TextSize = 12
     content.TextXAlignment = Enum.TextXAlignment.Left
+    content.TextYAlignment = Enum.TextYAlignment.Top
     content.TextWrapped = true
     content.ZIndex = 1000
     content.Parent = notify
@@ -5486,27 +5602,25 @@ function Library:Notify(config)
         Size = UDim2.new(0, 0, 0, 3),
     }):Play()
 
-    -- Стек уведомлений: список активных, а не общий счётчик — так позиции
-    -- остаются верными, даже если уведомления с разной длительностью
-    -- закрываются не по порядку.
+    -- Стек уведомлений: список активных; позиции считаются по высоте каждого
     self._activeNotifies = self._activeNotifies or {}
+    self._notifyDismiss = self._notifyDismiss or {}
     table.insert(self._activeNotifies, notify)
 
     local function reflow()
-        for i, n in ipairs(self._activeNotifies) do
-            local targetY = 20 + (i - 1) * 78
+        local y = 20
+        for _, n in ipairs(self._activeNotifies) do
             TweenService:Create(n, TweenInfo.new(0.38, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Position = UDim2.new(1, -300, 0, targetY),
+                Position = UDim2.new(1, -300, 0, y),
             }):Play()
+            y = y + n.Size.Y.Offset + 8
         end
     end
 
-    notify.Position = UDim2.new(1, 300, 0, 20 + (#self._activeNotifies - 1) * 78)
-    reflow()
-
-    if config.Sound ~= false then self:_play("Notify") end
-
-    task.delay(config.Duration or 5, function()
+    local dismissed = false
+    local function dismiss()
+        if dismissed then return end
+        dismissed = true
         local t = TweenService:Create(notify, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
             Position = UDim2.new(1, 300, 0, notify.Position.Y.Offset),
         })
@@ -5518,11 +5632,67 @@ function Library:Notify(config)
                     break
                 end
             end
+            self._notifyDismiss[notify] = nil
             reflow()
             notify:Destroy()
         end)
-    end)
+    end
+    self._notifyDismiss[notify] = dismiss
+
+    -- клик по уведомлению закрывает его
+    local hit = Instance.new("TextButton")
+    hit.BackgroundTransparency = 1
+    hit.Text = ""
+    hit.Size = UDim2.new(1, 0, 1, 0)
+    hit.ZIndex = 1003
+    hit.Parent = notify
+    hit.MouseButton1Click:Connect(dismiss)
+
+    if action then
+        local btn = Instance.new("TextButton")
+        btn.AnchorPoint = Vector2.new(1, 0)
+        btn.Position = UDim2.new(1, -12, 0, 66)
+        btn.Size = UDim2.new(0, 0, 0, 22)
+        btn.AutomaticSize = Enum.AutomaticSize.X
+        btn.BackgroundColor3 = accent
+        btn.AutoButtonColor = false
+        btn.BorderSizePixel = 0
+        btn.Font = Enum.Font.GothamBold
+        btn.Text = "  " .. tostring(action.Text or "OK") .. "  "
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.TextSize = 12
+        btn.ZIndex = 1005
+        btn.Parent = notify
+        createCorner(btn, 6)
+        btn.MouseButton1Click:Connect(function()
+            if action.Callback then action.Callback() end
+            dismiss()
+        end)
+    end
+
+    -- не больше 5 одновременно: самое старое уходит
+    if #self._activeNotifies > 5 then
+        local oldest = self._notifyDismiss[self._activeNotifies[1]]
+        if oldest then oldest() end
+    end
+
+    local startY = 20
+    for i = 1, #self._activeNotifies - 1 do
+        startY = startY + self._activeNotifies[i].Size.Y.Offset + 8
+    end
+    notify.Position = UDim2.new(1, 300, 0, startY)
+    reflow()
+
+    if config.Sound ~= false then self:_play("Notify") end
+
+    task.delay(config.Duration or 5, dismiss)
     return notify
+end
+
+function Library:GetNotifyHistory()
+    local copy = {}
+    for i, n in ipairs(self._notifyHistory or {}) do copy[i] = n end
+    return copy
 end
 
 -- ============================================================
@@ -5686,20 +5856,17 @@ end
 -- двойное нажатие возвращает окно в центр. Выключить: CreateWindow({ DragHandle = false })
 -- или Window:SetDragHandle(false).
 -- ------------------------------------------------------------
--- Пружинная «магнитная» догонялка: окно притягивается к палке, чуть перелетает и успокаивается
+-- Плавное следование: палка идёт за пальцем, а окно медленно и без рывков подползает к ней
 function Library:_stepMagnet(dt)
     local h = self._handle
     if not h or not h.target then return end
-    local d = math.min(dt, 1 / 30)
+    local d = math.min(dt, 0.1)
     local diff = h.target - h.cur
-    local acc = diff * 260 - h.vel * 26
-    h.vel = h.vel + acc * d
-    h.cur = h.cur + h.vel * d
-    local settled = (not h.drag) and diff.Magnitude < 0.4 and h.vel.Magnitude < 4
-    if settled then
-        h.cur = h.target
-        h.vel = Vector2.new(0, 0)
-    end
+    -- плавное «подползание» к палке без отскока; скорость задаёт FollowSpeed (меньше = медленнее)
+    local k = 1 - math.exp(-(self._followSpeed or 5) * d)
+    h.cur = h.cur + diff * k
+    local settled = (not h.drag) and diff.Magnitude < 0.5
+    if settled then h.cur = h.target end
     self.Wrapper.Position = UDim2.new(h.base.X.Scale, h.cur.X, h.base.Y.Scale, h.cur.Y)
 
     -- палка остаётся там, где её держит палец, пока окно подтягивается
@@ -5710,7 +5877,7 @@ function Library:_stepMagnet(dt)
 
     -- нить притяжения от низа окна к палке
     local gapLen = gap.Magnitude
-    if gapLen > 6 and not settled then
+    if h.tetherOn and gapLen > 6 and not settled then
         local ax = self.Main.Position.X.Offset
         local ay = self.Main.Position.Y.Offset + self.Main.Size.Y.Offset / 2
         local vx, vy = gap.X, gap.Y + h.hitH / 2 + 2
@@ -5856,6 +6023,7 @@ function Library:_createDragHandle()
     tether.Parent = self.Wrapper
     createCorner(tether, 999)
     h.tether = tether
+    h.tetherOn = (self.Config.HandleTether == true) -- тонкая нить между окном и палкой (по желанию)
 
     -- ручка всегда под окном, даже во время открытия, сворачивания и изменения размера
     local function place()
@@ -5962,6 +6130,12 @@ function Library:_showHandle(show)
             if token == h.token then h.holder.Visible = false end
         end)
     end
+end
+
+-- Скорость, с которой окно следует за палкой: 1 — очень медленно, 5 — по умолчанию, 20 — почти сразу
+function Library:SetFollowSpeed(n)
+    self._followSpeed = math.clamp(tonumber(n) or 5, 1, 20)
+    self:_persist("_follow", self._followSpeed)
 end
 
 function Library:SetDragHandle(v)
@@ -6368,6 +6542,10 @@ function Library:CreateSettingsTab(opts)
     tab:CreateToggle({
         Name = t("set_handle"), CurrentValue = self._handleEnabled,
         Callback = function(v) win:SetDragHandle(v) end,
+    })
+    tab:CreateSlider({
+        Name = t("set_follow"), Min = 1, Max = 20, Increment = 1, CurrentValue = self._followSpeed,
+        Callback = function(v) win:SetFollowSpeed(v) end,
     })
     tab:CreateToggle({
         Name = t("set_particles"), CurrentValue = self._particlesEnabled,
